@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- IMGW-PIB (measurements, warnings) and Open-Meteo (forecast) only, and only while something is on screen. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/banner"
+        android:banner="@drawable/banner"
+        android:theme="@style/Opaque"
+        android:allowBackup="false">
+
+        <!-- The weather screen. Started by the launcher after home_idle_clock_minutes (idle_activity), and the
+             app's tile in the grid. Any key goes back. -->
+        <activity
+            android:name=".WeatherActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The same screen as the system screensaver. Select it with
+             settings put secure screensaver_components tv.pogoda.imgw/.WeatherDream -->
+        <service
+            android:name=".WeatherDream"
+            android:label="@string/app_name"
+            android:exported="true"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
+        <!-- One line of weather for the launcher's Home, under the date (home_weather_authority). Public weather
+             data only, so no permission. Refreshes on demand when the answer is older than 30 minutes. -->
+        <provider
+            android:name=".WeatherProvider"
+            android:authorities="tv.pogoda.imgw.now"
+            android:exported="true" />
+    </application>
+</manifest>

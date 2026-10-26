@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pogoda</string>
+    <string name="date_format" translatable="false">EEEE d MMMM</string>
+    <string name="hours_title">Najbliższe godziny</string>
+    <string name="days_title">Kolejne dni</string>
+    <string name="no_data">Brak danych pogodowych – sprawdź połączenie</string>
+    <!-- Required by the IMGW-PIB terms: the source, and that the data was processed. -->
+    <string name="sources" translatable="false">Źródło danych: IMGW-PIB (pomiar, ostrzeżenia) · Open-Meteo (prognoza) · dane przetworzone</string>
+</resources>

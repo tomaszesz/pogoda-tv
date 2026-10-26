@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weather icon "sunrise": half a sun on the horizon with an arrow, same line style as ic_w_*. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:pathData="M15,36 A9,9 0 0 1 33,36" android:strokeColor="#FFC24A" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M10.5,27.5 L12.8,29 M37.5,27.5 L35.2,29 M24,20.5 L24,23" android:strokeColor="#FFC24A" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M8,36 L40,36 M14,41 L34,41" android:strokeColor="#E6E6E6" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M24,15 L24,6 M20,10 L24,6 L28,10" android:strokeColor="#E6E6E6" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weather icon "partly": thin line art, one family for every WMO code (Weather.icon). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <group android:translateY="0"><path android:pathData="M26,16 A5,5 0 1 0 36,16 A5,5 0 1 0 26,16 Z" android:strokeColor="#FFC24A" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" /><path android:pathData="M31,6 L31,8.5 M41,16 L38.5,16 M38,9 L36.3,10.7 M24,9 L25.7,10.7" android:strokeColor="#FFC24A" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" /></group><group android:translateX="-3" android:translateY="3"><path android:pathData="M14,36 H34 A7.5,7.5 0 0 0 34.5,21 A10,10 0 0 0 15.5,19.5 A8.5,8.5 0 0 0 14,36 Z" android:fillColor="#FF000000" android:strokeColor="#E6E6E6" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" /></group>
+</vector>

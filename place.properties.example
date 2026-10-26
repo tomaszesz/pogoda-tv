@@ -1,0 +1,7 @@
+# Copy to place.properties (kept out of git) and set your own place.
+place_name=Kraków
+latitude=50.0614
+longitude=19.9366
+synop_id=12566
+station_name=Kraków-Balice
+teryt=1261

@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Where the weather is for. Defaults: Kraków city centre. Your own place goes in place.properties in the project
+// root (not in git, see place.properties.example); every key there overrides the default below.
+def place = [
+        place_name  : 'Kraków',
+        latitude    : '50.0614',
+        longitude   : '19.9366',
+        synop_id    : '12566',          // IMGW synoptic station: https://danepubliczne.imgw.pl/api/data/synop
+        station_name: 'Kraków-Balice',
+        teryt       : '1261',           // four-digit powiat code for IMGW warnings (1261 = miasto Kraków)
+]
+def placeFile = rootProject.file('place.properties')
+if (placeFile.exists()) {
+    def own = new Properties()
+    placeFile.withReader('UTF-8') { own.load(it) }
+    own.each { k, v -> if (place.containsKey(k)) place[k] = v.trim() }
+}
+
+android {
+    namespace 'tv.pogoda.imgw'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'tv.pogoda.imgw'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        place.each { k, v -> resValue 'string', k, v }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            // Sideloaded over ADB, never published.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    // android.jar only has stubs of org.json; the parser tests need the real thing.
+    testImplementation 'org.json:json:20231013'
+}

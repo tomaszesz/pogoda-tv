@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The place (name, coordinates, IMGW station, TERYT) is not here: it comes from place.properties in the
+     project root, or the defaults in app/build.gradle (Kraków city centre). See README.md. -->
+<resources />

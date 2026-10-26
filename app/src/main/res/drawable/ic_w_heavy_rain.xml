@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weather icon "heavy_rain": thin line art, one family for every WMO code (Weather.icon). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <group android:translateX="0" android:translateY="-8"><path android:pathData="M14,36 H34 A7.5,7.5 0 0 0 34.5,21 A10,10 0 0 0 15.5,19.5 A8.5,8.5 0 0 0 14,36 Z" android:fillColor="#FF000000" android:strokeColor="#E6E6E6" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" /></group><path android:pathData="M15,32 L12,42 M21,32 L18,42 M27,32 L24,42 M33,32 L30,42" android:strokeColor="#7FB8FF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

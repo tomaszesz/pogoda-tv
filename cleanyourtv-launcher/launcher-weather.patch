@@ -1,0 +1,198 @@
+diff --git a/launcher/app/src/main/AndroidManifest.xml b/launcher/app/src/main/AndroidManifest.xml
+index 701b5feb..d86ebba7 100644
+--- a/launcher/app/src/main/AndroidManifest.xml
++++ b/launcher/app/src/main/AndroidManifest.xml
+@@ -68,6 +68,8 @@
+         <!-- Coocaa OS sources for the Inputs menu (coocaa_sources); see CoocaaSources. -->
+         <provider android:authorities="com.skyworth.tv.provider" />
+         <provider android:authorities="com.skyworth.tv.sdk.provider" />
++        <!-- home_weather_authority: the Pogoda app's weather line. -->
++        <provider android:authorities="tv.pogoda.imgw.now" />
+     </queries>
+ 
+     <application
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/HomeWeather.java b/launcher/app/src/main/java/com/gathin/tvhome/HomeWeather.java
+new file mode 100644
+index 00000000..b5d888e6
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/HomeWeather.java
+@@ -0,0 +1,115 @@
++package com.gathin.tvhome;
++
++import android.app.Activity;
++import android.content.pm.PackageManager;
++import android.content.pm.ProviderInfo;
++import android.content.res.Resources;
++import android.database.Cursor;
++import android.graphics.drawable.Drawable;
++import android.net.Uri;
++import android.util.TypedValue;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.LinearLayout;
++import android.widget.TextView;
++
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.Future;
++
++/**
++ * home_weather_authority: one line of text from another app's content provider (content://authority/line, column
++ * "line", and optionally "icon", the name of a drawable in that app drawn before the text), shown under the date on Home. The launcher itself still has no network: the other app fetches, and is
++ * asked only when Home comes to the front, off the main thread. No answer, or an empty one, hides the line.
++ */
++final class HomeWeather {
++
++    private final Activity activity;
++    private final TextView view;
++    private final Uri uri;
++    private final ExecutorService io = Executors.newSingleThreadExecutor();
++    private Future<?> pending;
++
++    private HomeWeather(Activity activity, TextView view, String authority) {
++        this.activity = activity;
++        this.view = view;
++        this.uri = Uri.parse("content://" + authority + "/line");
++    }
++
++    /** Null when home_weather_authority is empty. Adds the line under the date (and the lunar date, when shown). */
++    static HomeWeather attach(Activity activity, String authority) {
++        if (authority == null || authority.isEmpty()) return null;
++        TextView date = activity.findViewById(R.id.date);
++        LinearLayout column = (LinearLayout) date.getParent();
++        TextView line = new TextView(activity);
++        line.setSingleLine(true);
++        line.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
++        line.setTextColor(0xB3FFFFFF);
++        line.setTypeface(date.getTypeface());
++        line.setLetterSpacing(0.04f);
++        line.setGravity(android.view.Gravity.CENTER_VERTICAL);
++        line.setCompoundDrawablePadding(Math.round(10 * activity.getResources().getDisplayMetrics().density));
++        line.setVisibility(View.GONE);
++        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
++                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
++        lp.topMargin = Math.round(8 * activity.getResources().getDisplayMetrics().density);
++        column.addView(line, lp);
++        return new HomeWeather(activity, line, authority);
++    }
++
++    /** Ask again; one question at a time. */
++    void refresh() {
++        if (pending != null && !pending.isDone()) return;
++        pending = io.submit(() -> {
++            String text = null;
++            Drawable icon = null;
++            try (Cursor c = activity.getContentResolver().query(uri, null, null, null, null)) {
++                if (c != null && c.moveToFirst()) {
++                    text = c.getString(0);
++                    int col = c.getColumnIndex("icon");
++                    if (col >= 0) icon = icon(c.getString(col));
++                }
++            } catch (RuntimeException e) {
++                // the app is gone, disabled or failed: hide the line
++            }
++            String shown = text;
++            Drawable drawn = icon;
++            activity.runOnUiThread(() -> {
++                if (shown == null || shown.isEmpty()) {
++                    view.setVisibility(View.GONE);
++                } else {
++                    view.setText(shown);
++                    view.setCompoundDrawablesRelative(drawn, null, null, null);
++                    view.setVisibility(View.VISIBLE);
++                }
++            });
++        });
++    }
++
++    /**
++     * The provider's own drawable by name ("icon" column), loaded from its package so Home draws the same icon set
++     * as the app; null when there is none or it cannot be loaded, and the line shows text only.
++     */
++    private Drawable icon(String name) {
++        if (name == null || name.isEmpty()) return null;
++        try {
++            PackageManager pm = activity.getPackageManager();
++            ProviderInfo provider = pm.resolveContentProvider(uri.getAuthority(), 0);
++            if (provider == null) return null;
++            Resources res = pm.getResourcesForApplication(provider.packageName);
++            int id = res.getIdentifier(name, "drawable", provider.packageName);
++            if (id == 0) return null;
++            Drawable d = res.getDrawable(id, null);
++            // A little larger than the text, as an icon beside a line of type.
++            int size = Math.round(view.getTextSize() * 1.6f);
++            d.setBounds(0, 0, size, size);
++            return d;
++        } catch (PackageManager.NameNotFoundException | RuntimeException e) {
++            return null;
++        }
++    }
++
++    void shutdown() {
++        io.shutdownNow();
++    }
++}
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index a5acd794..9929af4d 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -121,7 +121,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     private long settingsRevision;
+     /** Idle time on Home before ClockActivity; 0 is off (config.xml, home_idle_clock_minutes). */
+     private long idleClockMs;
+-    private final Runnable showIdleClock = () -> startActivity(new Intent(this, ClockActivity.class));
++    private final Runnable showIdleClock = this::startIdleScreen;
++    /** home_weather_authority: the weather line under the date; null when off. */
++    private HomeWeather homeWeather;
+     private String liveTvAction;
+     private String liveTvInputId;
+     /** The app library is on (config.xml, app_library): only then can the tile menu take an app off Home. */
+@@ -502,6 +504,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         if (lunar) lunarDate.setVisibility(View.VISIBLE);
+         greetingName = cfg.greetingName;
+         if (cfg.dateBelowClock) moveDateBelowClock();
++        if (homeWeather == null) homeWeather = HomeWeather.attach(this, getString(R.string.home_weather_authority));
+         if (shamsi) {
+             shamsiDate.setVisibility(View.VISIBLE);
+             TextView date = findViewById(R.id.date);
+@@ -940,6 +943,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     @Override
+     protected void onResume() {
+         super.onResume();
++        if (homeWeather != null) homeWeather.refresh();
+         // A festival that started or ended while Home was in the background: rebuild with or without it.
+         if (festive != festival.active(LocalDate.now())) {
+             recreate();
+@@ -1148,6 +1152,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         if (idleClockMs > 0) root.postDelayed(showIdleClock, idleClockMs);
+     }
+ 
++    /**
++     * After home_idle_clock_minutes: the app screen named by idle_activity ("package/.Activity"), or the clock when
++     * that is empty, not installed or disabled.
++     */
++    private void startIdleScreen() {
++        String idle = getString(R.string.idle_activity);
++        ComponentName screen = idle.isEmpty() ? null : ComponentName.unflattenFromString(idle);
++        if (screen != null) {
++            try {
++                startActivity(new Intent().setComponent(screen));
++                return;
++            } catch (ActivityNotFoundException | SecurityException gone) {
++                // fall back to the clock
++            }
++        }
++        startActivity(new Intent(this, ClockActivity.class));
++    }
++
+     @Override
+     protected void onPause() {
+         super.onPause();
+@@ -1213,6 +1235,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     @Override
+     protected void onDestroy() {
+         super.onDestroy();
++        if (homeWeather != null) homeWeather.shutdown();
+         unregisterReceiver(packageReceiver);
+         wallpaperPlayer.close();
+         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
