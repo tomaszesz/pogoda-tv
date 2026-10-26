@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build Pogoda (tests first) and install it on the TV over ADB, with cleanyourtv's ADB client, which works where the
-# adb binary is blocked. Needs JDK 17 and Android SDK 34: Android Studio brings both (its JDK is picked up below),
-# or set JAVA_HOME and ANDROID_HOME yourself.
+# adb binary is blocked. Needs JDK 17 and Android SDK 34 (platform 34, build-tools 34.0.0) in ~/Library/Android/sdk:
+# a Temurin 17 macOS knows about, or Android Studio's, is picked up below; or set JAVA_HOME and ANDROID_HOME yourself.
 #
 # Usage (USB debugging on, TV on the network):
 #   TV_HOST=<tv ip> ./build-and-install.sh            build, test, install
@@ -10,13 +10,18 @@
 # Through cleanyourtv's tools/relay.py use TV_HOST=127.0.0.1 TV_PORT=15555.
 set -euo pipefail
 cd "$(dirname "$0")"
-: "${TV_HOST:?set TV_HOST to the TV's IP address}"
+: "${TV_HOST:?set TV_HOST to the IP address of the TV}"
 export TV_HOST TV_PORT="${TV_PORT:-5555}"
 TOOLS="${CLEANYOURTV:-../cleanyourtv}/tools"
 PY="$TOOLS/venv/bin/python"
 [ -x "$PY" ] || { echo "no cleanyourtv ADB client at $TOOLS (see README.md)" >&2; exit 1; }
-if [ -z "${JAVA_HOME:-}" ] && [ -d "/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]; then
-  export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+if [ -z "${JAVA_HOME:-}" ]; then
+  # A JDK 17 macOS knows about (e.g. Temurin in ~/Library/Java/JavaVirtualMachines), else Android Studio's.
+  JH="$(/usr/libexec/java_home -v 17 2>/dev/null || true)"
+  case "$("$JH/bin/java" -version 2>&1 || true)" in *'version "17.'*) export JAVA_HOME="$JH" ;; esac
+  if [ -z "${JAVA_HOME:-}" ] && [ -d "/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]; then
+    export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+  fi
 fi
 SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 [ -f local.properties ] || echo "sdk.dir=$SDK" > local.properties
