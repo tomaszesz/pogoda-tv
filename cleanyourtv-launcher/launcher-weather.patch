@@ -133,7 +133,7 @@ index 00000000..b5d888e6
 +    }
 +}
 diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
-index a5acd794..9929af4d 100644
+index a5acd794..7b990f56 100644
 --- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
 +++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
 @@ -121,7 +121,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
@@ -147,7 +147,19 @@ index a5acd794..9929af4d 100644
      private String liveTvAction;
      private String liveTvInputId;
      /** The app library is on (config.xml, app_library): only then can the tile menu take an app off Home. */
-@@ -502,6 +504,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+@@ -262,6 +264,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     private boolean stopped;
+     /** Between onStart and onStop: Home is (at least partly) on screen. */
+     private boolean started;
++    /**
++     * Between onResume and onPause: Home is in front. The idle clock only runs then; a key's ACTION_UP can still
++     * reach Home after onPause, when that key opened another app, and must not start the clock over the app.
++     */
++    private boolean resumed;
+     /** Rebuild the tiles on the way back to Home only when apps changed meanwhile (TileRefresh). */
+     private final TileRefresh tileRefresh = new TileRefresh();
+     /** PackageManager's change counter at the last rebuild, to catch a package broadcast that never arrived. */
+@@ -502,6 +509,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
          if (lunar) lunarDate.setVisibility(View.VISIBLE);
          greetingName = cfg.greetingName;
          if (cfg.dateBelowClock) moveDateBelowClock();
@@ -155,18 +167,23 @@ index a5acd794..9929af4d 100644
          if (shamsi) {
              shamsiDate.setVisibility(View.VISIBLE);
              TextView date = findViewById(R.id.date);
-@@ -940,6 +943,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+@@ -940,6 +948,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      @Override
      protected void onResume() {
          super.onResume();
++        resumed = true;
 +        if (homeWeather != null) homeWeather.refresh();
          // A festival that started or ended while Home was in the background: rebuild with or without it.
          if (festive != festival.active(LocalDate.now())) {
              recreate();
-@@ -1148,6 +1152,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
-         if (idleClockMs > 0) root.postDelayed(showIdleClock, idleClockMs);
-     }
+@@ -1145,12 +1155,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
  
+     private void restartIdleClock() {
+         root.removeCallbacks(showIdleClock);
+-        if (idleClockMs > 0) root.postDelayed(showIdleClock, idleClockMs);
++        if (resumed && idleClockMs > 0) root.postDelayed(showIdleClock, idleClockMs);
++    }
++
 +    /**
 +     * After home_idle_clock_minutes: the app screen named by idle_activity ("package/.Activity"), or the clock when
 +     * that is empty, not installed or disabled.
@@ -183,12 +200,16 @@ index a5acd794..9929af4d 100644
 +            }
 +        }
 +        startActivity(new Intent(this, ClockActivity.class));
-+    }
-+
+     }
+ 
      @Override
      protected void onPause() {
          super.onPause();
-@@ -1213,6 +1235,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
++        resumed = false;
+         root.removeCallbacks(showIdleClock);
+         endReorder();   // Home or another app while reordering keeps the order so far
+         wallpaperPlayer.stop();
+@@ -1213,6 +1242,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      @Override
      protected void onDestroy() {
          super.onDestroy();
